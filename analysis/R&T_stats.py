@@ -281,7 +281,7 @@ df = pd.DataFrame(v_theta, columns=['dt', 'strain', 'confinement', 'disorder', '
 
 pillar_mapping = {'pil0': 'Unc', 'pil1': 'C = 6 µm', 'pil2': 'C = 2.6 µm', 'pil3': 'C = 1.3 µm'}
 disorder_mapping = {'dis0': 'no pillar', 'dis1': 'D = 0', 'dis2': 'D = 1', 
-                    'dis3': 'D = 3', 'dis4':'D = 4'}
+                    'dis3': 'D = 2', 'dis4':'D = 3'}
 
 # Replace the category names in the DataFrame
 df['confinement'] = df['confinement'].replace(pillar_mapping)
