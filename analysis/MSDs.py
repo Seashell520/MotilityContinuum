@@ -370,7 +370,7 @@ plt.figure(figsize=(rows*3, cols*3))
 
 count = 0
 
-conditions = ['Unc', 'C = 6 µm; D = 0', 'C = 6 µm; D = 1', 'C= 6 µm; D = 2', 'C= 6 µm; D = 3',
+conditions = ['Unc', 'C = 6 µm; D = 0', 'C = 6 µm; D = 1', 'C = 6 µm; D = 2', 'C = 6 µm; D = 3',
        'C = 2.6 µm; D = 0', 'C = 2.6 µm; D = 1', 'C = 2.6 µm; D = 2', 'C = 2.6 µm; D = 3', 
         'C = 1.3 µm; D = 0', 'C = 1.3 µm; D = 1', 'C = 1.3 µm; D = 2', 'C = 1.3 µm; D = 3']
 
