@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib as mpl
 import random
+import matplotlib.ticker as ticker
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
@@ -160,8 +161,8 @@ def macrostates(speed_thresh, angle_thresh, df: pd.DataFrame):
 # In[ ]:
 
 
-upperdir = '/'.join(os.getcwd().split('/')[:-2]) #define upper directory
-lowerdir = '/storage_git/sorted_tracks/' #define lower directory where all the data is located
+upperdir = '/'.join(os.getcwd().split('/')[:-1]) #define upper directory
+lowerdir = '/sorted_tracks/' #define lower directory where all the data is located
 files = glob.glob(upperdir + lowerdir + '*.csv') #grab all the files in their pathways 
 files = sorted(files) #sort the files based on the naming
 len(files)
@@ -300,7 +301,6 @@ df_exploded['a'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
 df_exploded['t'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
 df_exploded = df_exploded.rename(columns={'p':'rescaled_pos', 's':'speed', 'a':'angle', 't':'rescaled_time'})
 # df_exploded['condition'] = df_exploded['condition'].astype('category')
-df_exploded
 
 
 # In[ ]:
@@ -350,7 +350,6 @@ unconfined_df = df_exploded[(df_exploded['condition'] == unconfined)]
 
 
 ### speed-angle bivariate for the unconfined region [Figure 2a]
-import matplotlib.ticker as ticker
 mpl.rcParams['font.family'] = 'Arial'
 fig, ax = plt.subplots(figsize=(8.5,8))
 
@@ -878,35 +877,9 @@ for (condition, particle_id), gp in gp_dfs:
     else:
         tumble_dts_all[condition] = [tumble_dts]
 
-        
-### Run probability 
-data1 = []
 
-for condition, run_t in run_t_all.items():
-    
-    times = flatten(run_t)
-   
-    for t in times:
-        
-        data1.append({'Condition': condition, 'Run T': t})
-        
-df_run_t = pd.DataFrame(data1)
-
-### Tumble probability
-data2 = []
-
-for condition, tumble_t in tumble_t_all.items():
-    
-    times = flatten(tumble_t)
-    
-    for t in times:
-        
-        data2.append({'Condition': condition, 'Tumble T': t})
-        
-df_tumble_t = pd.DataFrame(data2)
-
-### the dataset of mean sojourn time for running
-data3 = []
+### the dataset for mean run time
+data5 = []
 
 for condition, run_dts in run_dts_all.items():
     
@@ -914,12 +887,12 @@ for condition, run_dts in run_dts_all.items():
     
     for duration in durations:
         
-        data3.append({'Condition': condition, 'Run_T': duration})
+        data5.append({'Condition': condition, 'Run_T': duration})
         
-df_run_dts = pd.DataFrame(data3)
+df_run_dts = pd.DataFrame(data5)
 
-### the dataset of mean sojourn time for tumbling
-data4 = []
+### the dataset for mean tumble time
+data6 = []
 
 for condition, tumble_dts in tumble_dts_all.items():
     
@@ -927,9 +900,9 @@ for condition, tumble_dts in tumble_dts_all.items():
     
     for duration in durations:
         
-        data4.append({'Condition': condition, 'Tumble_T': duration})
+        data6.append({'Condition': condition, 'Tumble_T': duration})
         
-df_tumble_dts = pd.DataFrame(data4)
+df_tumble_dts = pd.DataFrame(data6)
 
 
 # In[ ]:
@@ -1067,36 +1040,39 @@ plt.savefig('fig2d_tumble_t.png',transparent=True,dpi=300)
 #plt.show()
 plt.close()
 
-
 # In[ ]:
 
+### compute tumble bias
+Tumbles = []
+for condition, t in tumble_t_all.items():
+    tumbles = []
+    for bac in t:
+        tumbles.append(len(bac))
+    Tumbles.append(tumbles)
 
-### compute run and tumble proportions 
-number_run_states = []
-for index, gp in df_run_t.groupby('Condition'):
-    number_run_states.append(len(gp['Run T']))
+Runs = []
+for condition, t in run_t_all.items():
+    runs = []
+    for bac in t:
+        runs.append(len(bac))
+    Runs.append(runs)
     
-number_tumble_states = []
-for index, gp in df_tumble_t.groupby('Condition'):
-    number_tumble_states.append(len(gp['Tumble T']))
+TB_all = []
+for i,j in zip(Tumbles,Runs):
+    TB = []
+    for t,r in zip(i,j):
+        tb = t / (t+r)
+        TB.append(tb)
+    TB_all.append(np.mean(TB))
     
-## Calculate the probability of run states/tumble states
-p_run_all = []
-p_tumble_all = []
-for i,j in zip(number_run_states,number_tumble_states):
-    p_run = i/(i+j)
-    p_tumble = j/(i+j)
-    p_run_all.append(p_run)
-    p_tumble_all.append(p_tumble)
+TBs_all = TB_all + [np.nan] * 3
 
-p_t = p_tumble_all + [0.0] * 3
-
-p_tum = []
-for i in p_t:
+TBs = []
+for i in TBs_all:
     i = round(i,3)
-    p_tum.append(i)
+    TBs.append(i)
 
-# Updated confinement and disorder values
+# Assign the tumble bias values to confinement and disorder
 confinement = ['1.3 µm'] * 4 + ['2.6 µm'] * 4 + ['6 µm'] * 4 + ['Unc'] * 4
 disorder = [0, 1, 2, 3] * 4
 
@@ -1104,14 +1080,14 @@ disorder = [0, 1, 2, 3] * 4
 df = pd.DataFrame({
     'C': confinement,
     'D': disorder,
-    'P_tum': p_tum
+    'TB': TBs
 })
 
 # Reorder the 'C' column to have rows from 'Unc' to '1.3 µm'
 df['C'] = pd.Categorical(df['C'], categories=['Unc', '6 µm', '2.6 µm', '1.3 µm'], ordered=True)
 
 # Pivot the DataFrame to structure it for a heatmap
-htmp = df.pivot(index="C", columns="D", values="P_tum")
+htmp = df.pivot(index="C", columns="D", values="TB")
 
 # Plotting the heatmap
 
@@ -1126,11 +1102,8 @@ sns.heatmap(htmp, annot=True, vmin=0.18, vmax=0.6, cmap="plasma", cbar=True,line
             },annot_kws={'size': 18})
 plt.xlabel("D", fontsize=18)  # X-axis label size
 plt.ylabel("C", fontsize=18)  # Y-axis label size
-
+plt.title('Tumble bias')
 plt.xticks(fontsize=18)  # X-axis tick label size
 plt.yticks(fontsize=18)
-plt.savefig('fig2e_htmp_tumble.png', dpi=300,transparent=True)
-#plt.show()
+plt.savefig('fig2e_htmp_tb.png', dpi=300,transparent=True)
 plt.close()
-    
-
