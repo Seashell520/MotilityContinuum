@@ -13,17 +13,18 @@ Bacterial motility, *E. coli*, complex environments, microbial active matter, mi
 
 ### Authors
 
-Haibei Zhang<sup>*1</sup>, Miles T. Wetherington<sup>*2,3</sup>, Hungtang Ko<sup>4</sup>, Cody E. FitzGerald<sup>5</sup>, Jasmine A. Nirody<sup>6</sup>
+Haibei Zhang<sup>*1</sup>, Miles T. Wetherington<sup>*2,3</sup>, Hungtang Ko<sup>4</sup>, Cody E. FitzGerald<sup>5</sup>, Edwin M. Munro<sup>6</sup>, Jasmine A. Nirody<sup>7</sup>
 
-*These authors contributed equally to this work.
 
 1. Graduate Program in Biophysical Sciences, University of Chicago, 929 East 57th St, Chicago, IL 60637
 2. School of Physics, Georgia Institute of Technology, 837 State St NW, Atlanta, GA 30332
 3. School of Applied and Engineering Physics, Cornell University, Clark Hall, 271, 142 Sciences Dr, Ithaca, NY 14853
 4. Department of Mechanical and Aerospace Engineering, Princeton University, 41 Olden St, 401 Princeton, NJ 08544
 5. Department of Engineering Sciences and Applied Mathematics, Northwestern University, 404 2145 Sheridan Rd, Evanston, IL 60208
-6. Department of Organismal Biology and Anatomy, University of Chicago, 1027 E 57th St, 407 Chicago, IL 60637
+6. Department of Molecular Genetics and Cell Biology, University of Chicago, 920 E. 58th St, Chicago, Il 60637
+7. Department of Organismal Biology and Anatomy, University of Chicago, 1027 E 57th St, 407 Chicago, IL 60637
 
+*These authors contributed equally to this work.
 
 ### Acknowledgments
 
@@ -32,4 +33,4 @@ Foundation (Award 2235451) and the Simons Foundation (Award MP-TMPS-00005320). H
 
 ### License
 
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
+This project is licensed under the CC-BY-NC 4.0 International License - see the LICENSE.md file for details.
