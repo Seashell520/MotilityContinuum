@@ -376,7 +376,7 @@ plt.xlim(0,np.pi)
 plt.plot(np.linspace(0,np.pi,20),np.array([half_mean_speed]*20),linestyle='dashed',linewidth=3,color='orange',label=
         'Speed threshold')
  
-plt.plot(np.array([np.pi/3]*20),np.linspace(half_mean_speed,60,20),linestyle='dashed',linewidth=3,color='darkblue',label='Angle threshold')
+plt.plot(np.array([angle_thresh]*20),np.linspace(half_mean_speed,60,20),linestyle='dashed',linewidth=3,color='darkblue',label='Angle threshold')
 plt.ylabel('Speed, v (µm/s)',fontsize=20)
 plt.title('Unconfined',fontsize =20)
 plt.legend(fontsize=20, loc='upper right')
@@ -422,7 +422,7 @@ for (condition, gp) in df_exploded.groupby('condition'):
     plt.plot(np.linspace(0,np.pi,20),np.array([half_mean_speed]*20),linestyle='dashed',linewidth=3,color='gold',label=
             'Speed threshold')
     
-    plt.plot(np.array([np.pi/4]*20),np.linspace(0,70,20),linestyle='dashed',linewidth=3,color='pink',label='Angle threshold')
+    plt.plot(np.array([angle_thresh]*20),np.linspace(0,70,20),linestyle='dashed',linewidth=3,color='pink',label='Angle threshold')
     plt.ylabel('Speed, v (µm/s)',fontsize=14)
     plt.title(f' {condition} ',fontsize =14)
     plt.legend(fontsize=10, loc='upper right')
