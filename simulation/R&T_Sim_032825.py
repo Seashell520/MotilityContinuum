@@ -4,13 +4,14 @@
 # In[ ]:
 
 
-### This script is for the simulation of the modified run-and-tumble model described in the manuscript. 
-### It outputs Figure 6b & 6c as well as Supplmentary Figs 10-12. Written by Jasmine Nirody. Modified by Haibei Zhang.
+### This script is written for the simulation of the swim-and-stall model described in the manuscript based on the run-and-tumble model. 
+### It outputs Figure 5B & partial 5C as well as Supplmentary Figs 10-12. Written by Jasmine Nirody. Modified by Haibei Zhang. Last changed on March 27, 2025.
+
+#Load packages
 import re, math, sys, os, random
 import numpy as np
 import pylab as pl
 from matplotlib import collections  as mc
-import matplotlib as mpl
 import pandas as pd
 from optparse import OptionParser
 import matplotlib.pyplot as plt
@@ -30,7 +31,7 @@ import itertools
 # In[ ]:
 
 
-# Parameters
+## Parameters
 num_bacteria = 200            # Number of bacteria
 run_speed = 25.0
 simulation_time = 60.              # Total simulation time (seconds)
@@ -68,16 +69,13 @@ def get_consecutive_lengths(sequence):
 
     return tumble_lengths, run_lengths
 
-
-# In[ ]:
-
-
 # Function to simulate run-and-tumble dynamics and return ensemble-averaged MSD
 def simulate_msd_and_dynamics(tumble_probability, tumble_failure_probability):
+    int_tp = 1.0 ###### this is internal tumble probability which should be constant
     positions = np.zeros((num_bacteria, 2))
     direction = np.random.uniform(0, 2 * np.pi)
     trajectory = np.zeros((num_bacteria, int(simulation_time/dt), 2))
-    tumble = np.zeros((num_bacteria,int(simulation_time/dt)),dtype = 'int')
+    tumble = np.zeros((num_bacteria,int(simulation_time/dt)),dtype='int')
     tumble_lengths = []
     run_lengths = []
     
@@ -96,7 +94,8 @@ def simulate_msd_and_dynamics(tumble_probability, tumble_failure_probability):
                 if tumble[b][i] == 1:
                     if tumble[b][i+1] == 0:
                         if np.random.rand() < tumble_failure_probability: # check if tumble fails
-                            tumble_time = int(np.random.exponential(0.2)/dt)
+                            tumble_time = int(np.random.exponential(1/int_tp)/dt # a run
+                            + np.random.exponential(0.2)/dt) # a tumble
                             if tumble_time > dt:
                                 if i+1+tumble_time < len(tumble[b])-1:
                                     tumble[b][i+1:i+1+tumble_time] = 1
@@ -133,7 +132,7 @@ def simulate_msd_and_dynamics(tumble_probability, tumble_failure_probability):
     MSD = [[[] for i in range(int(simulation_time/dt))] for b in range(num_bacteria)]
     mean_MSD = []
     mpl.rcParams['font.family'] = 'Arial'
-    fig = plt.figure(figsize=(5,4))
+    fig, ax = plt.subplots(figsize=(5,4))
     for b in range(num_bacteria):
         x_start = trajectory[b][0][0]
         y_start = trajectory[b][0][1]
@@ -154,7 +153,7 @@ def simulate_msd_and_dynamics(tumble_probability, tumble_failure_probability):
             mean_MSD[b][shift] = mean(MSD[b][shift])
         path = np.array([*trajectory[b]])
         mean_MSD[b] /= mean_MSD[b][1]
-        plt.loglog(np.arange(len(mean_MSD[b]))[int(0.05/dt):int(40/dt)] * dt, mean_MSD[b][int(0.05/dt):int(40/dt)],color='lavender',label = 'Individual MSD', linewidth = 1,zorder=0)
+        plt.loglog(np.arange(len(mean_MSD[b]))[int(0.05/dt):int(40/dt)] * dt, mean_MSD[b][int(0.05/dt):int(40/dt)],color='lavender',label='Individual MSD',linewidth = 1,zorder=0)
     #plt.show()
     print(tumble_probability,tumble_failure_probability)
     meanofmeans_MSD = np.nanmean(np.array(list(itertools.zip_longest(*mean_MSD)),dtype=float),axis=1)
@@ -169,16 +168,19 @@ def simulate_msd_and_dynamics(tumble_probability, tumble_failure_probability):
         #squared_displacements = np.sum(displacements**2, axis=2)
         #msd_ensemble_averaged[lag - 1] = np.mean(squared_displacements)
     #plt.loglog(meanofmeans_MSD)
+    #plt.savefig('TP' + str(tumble_probability) + '_TF' + str(tumble_failure_probability) + '_MSD.pdf')
     plt.xlabel('Lag time τ (s)',fontsize=16)
     plt.ylabel('MSD (µm²)',fontsize=16)
+    plt.xlim([0.04,25])
+    plt.ylim([0.5,2e5])
     plt.xticks(fontsize=16)
     plt.yticks(fontsize=16)
-    plt.title(f'Tumble failure = {tumble_failure_probability}; Tumble freq = {tumble_probability}',fontsize=14)
+    plt.title(f'Tumble failure = {tumble_failure_probability};\nApparent tumble freq = {tumble_probability}',
+              multialignment='center', fontsize=14)
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys(), loc='upper left',fontsize=14)
     plt.tight_layout()
-    #plt.savefig('TP' + str(tumble_probability) + '_TF' + str(tumble_failure_probability) + '_MSD.pdf',dpi=300,transparent=True)
     
     # Normalize the MSD by the first value
     meanofmeans_MSD /= meanofmeans_MSD[1]
@@ -190,15 +192,7 @@ def simulate_msd_and_dynamics(tumble_probability, tumble_failure_probability):
     
     return meanofmeans_MSD, np.arange(len(meanofmeans_MSD)), tumble_lengths, run_lengths, fig
 
-
-# In[ ]:
-
-
-# Function to plot MSDs for varying tumble frequency or tumble failure probability.
-# Inputs are a single value of tumble failure probability (tf) and a list of tumble probability (tp). 
-# Outputs are three plots: 1) eMSD plot of fixed tumble failure probability with varying tumble probabilities; 
-# 2) a plot of four subplots including time- and ensemble- averaged MSDs; 3) a plot of 16 1-CDF subplots including run and tumble durations 
-
+# Function to plot MSDs for varying tumble frequency or tumble failure probability
 def plot_msd(tf,tp):
     
     #inset_ax1 = ax.inset_axes([0.05, 0.65, 0.3, 0.3], xlim=[0.1, 0.55], ylim = [3,150], xticklabels = [])
@@ -207,8 +201,9 @@ def plot_msd(tf,tp):
     all_run_lengths = []
     all_tumble_lengths = []
     figures = []
+    #conditions = [(tp[0],tf),(tp[1],tf)]
     conditions = [(tp[0],tf),(tp[1],tf),(tp[2],tf),(tp[3],tf)]
-    #conditions = [(4.0,0.0),(4.0,0.9),(4.0,0.99),(4.0,0.999)]
+    #conditions = [(2.0,0.0),(2.0,0.9),(2.0,0.99),(2.0,0.999)]
     all_msd_ensemble_averaged = [[] for i in range(len(conditions))]
     all_time_lags = [[] for i in range(len(conditions))]
     if abs(conditions[0][0] - conditions[1][0]) < 0.01:
@@ -229,6 +224,7 @@ def plot_msd(tf,tp):
         all_msd_ensemble_averaged[i], all_time_lags[i], tumble_lengths, run_lengths, subfig = simulate_msd_and_dynamics(tumble_probability, tumble_failure_probability)
         all_tumble_lengths.append(tumble_lengths)
         all_run_lengths.append(run_lengths)
+        #print(type(subfig))
         figures.append(subfig)
     rows = 1
     cols = 4
@@ -242,8 +238,11 @@ def plot_msd(tf,tp):
         # Set log scale if used in the original plot
         if ax_i.get_xscale() == 'log':
             ax.set_xscale('log')
+            ax.set_xlim([0.04,25])
+            
         if ax_i.get_yscale() == 'log':
             ax.set_yscale('log')
+            ax.set_ylim([0.5,2e5])
     
         # Copy axis labels and title
         ax.set_xlabel(ax_i.get_xlabel(), fontsize=16)
@@ -266,7 +265,7 @@ def plot_msd(tf,tp):
         ax.legend(by_label.values(), by_label.keys(), loc='upper left', fontsize=15)
 
     plt.tight_layout()
-    plt.savefig(f'MSD_tf_{tf}.pdf',dpi=300,transparent=True)
+    plt.savefig(f'swim_stall_MSD_tf_{tf}.pdf',dpi=300,transparent=True)
     plt.show()
     plt.close()
     # MSD Plot
@@ -301,8 +300,8 @@ def plot_msd(tf,tp):
                 #popt_medium, _ = curve_fit(power_law, medium_time_lags, msd_medium)
         ax.loglog(medium_time_lags, power_law(medium_time_lags, 40, 1), '--',color='black', lw='1')
 
-    ax.set_xlim([0.04,60])
-    ax.set_ylim([0.5,100000])
+    ax.set_xlim([0.04,25])
+    ax.set_ylim([0.5,2e5])
     #ax.set_title('Normalized Ensemble-Averaged MSD for Varying Tumble Probability')
     ax.set_xlabel('Time (s)',fontsize=16)
     ax.set_ylabel('Normalized MSD',fontsize=16)
@@ -314,9 +313,9 @@ def plot_msd(tf,tp):
 
     # Put a legend below current axis
     if vary == 'frequency':
-        ax.legend(title = 'Tumble ' + constant + '=' + str(tumble_failure_probability) + ', Tumble ' + vary + '=', loc='upper center', bbox_to_anchor=(0.5, 1.18), ncol=len(conditions), fontsize=12)
+        ax.legend(title = 'Tumble ' + constant + '=' + str(tumble_failure_probability) + ', Apparent tumble ' + vary + '=', loc='upper center', bbox_to_anchor=(0.5, 1.18), ncol=len(conditions), fontsize=12)
     if vary == 'failure':
-        ax.legend(title = 'Tumble ' + constant + '=' + str(tumble_probability) + ', Tumble ' + vary + '= :', loc='upper center', bbox_to_anchor=(0.5, 1.18), ncol=len(conditions), fontsize=12)
+        ax.legend(title = 'Apparent tumble ' + constant + '=' + str(tumble_probability) + ', Tumble ' + vary + '= :', loc='upper center', bbox_to_anchor=(0.5, 1.18), ncol=len(conditions), fontsize=12)
 
 #    _, c = ax.indicate_inset_zoom(inset_ax1, edgecolor="black")
 #    c[0].set_visible(False)
@@ -376,7 +375,8 @@ def plot_msd(tf,tp):
    # inset_ax2.set_yscale('log')
    # inset_ax2.set_xticklabels([])
     #inset_ax2.set_yticklabels([])
-    plt.savefig('MSD_' + plot_add + '.pdf', dpi = 300, transparent = True)
+    plt.savefig('swim_stall_MSD_' + plot_add + '.pdf', dpi = 300, transparent = True)
+    plt.show()
     plt.close()
 
    # if vary_tumble_frequency:
@@ -391,13 +391,13 @@ def plot_msd(tf,tp):
         ax = plt.subplot(rows,cols,ticks)
         #if vary_tumble_frequency:
         plot_tumble = [tl*dt for tl in all_tumble_lengths[i]]
-        sns.ecdfplot(ax=ax,data=plot_tumble, complementary=True, color='xkcd:barney purple', label=r'$<T_{tumble}> =$ ' + str(round(mean(all_tumble_lengths[i])*dt,2)) + ' s')
+        sns.ecdfplot(ax=ax,data=plot_tumble, complementary=True, color='xkcd:barney purple', label=r'$<T_{stall}> =$ ' + str(round(mean(all_tumble_lengths[i])*dt,2)) + ' s')
         #axes[i].set_ylabel('Tumble time count')
         #axes[i].legend()
         print('Mean tumble: ', mean(all_tumble_lengths[i])*dt)
         #plt.show()
         plot_run = [rl*dt for rl in all_run_lengths[i]]
-        sns.ecdfplot(ax=ax, data=plot_run, complementary=True, color='dodgerblue', label=r'$<T_{run}> =$ ' + str(round(mean(all_run_lengths[i])*dt,2)) + ' s')
+        sns.ecdfplot(ax=ax, data=plot_run, complementary=True, color='dodgerblue', label=r'$<T_{swim}> =$ ' + str(round(mean(all_run_lengths[i])*dt,2)) + ' s')
         print('Mean run: ', mean(all_run_lengths[i])*dt)
         ax.set_ylabel('')
         ax.legend(prop={'size': 12})
@@ -409,7 +409,7 @@ def plot_msd(tf,tp):
         ax.set_xscale('log')
         ax.set_ylabel('Probability',fontsize=16)
         ax.set_xlabel('Duration (s)',fontsize=16)
-        ax.set_title(f'Tumble failure = {tf} \n Tumble freq = {tp[ticks-1]}',fontsize=14)
+        ax.set_title(f'Tumble failure = {tf} \n Apparent tumble freq = {tp[ticks-1]}',fontsize=14)
     plt.tight_layout()
         #plt.show()
 #        else:
@@ -426,48 +426,34 @@ def plot_msd(tf,tp):
 #            ax2.set_ylabel('Run time count')
 #            ax2.legend()
 #            #plt.show()
-    plt.savefig('runtumbles_' + plot_add + '.pdf',dpi=300,transparent=True)
+    plt.savefig('swim_stall_' + plot_add + '.pdf',dpi=300,transparent=True)
+
+
+# In[ ]:
+
 
 #Example usage:
 #tf = 0
 #tp = [1.0,2.0,4.0,8.0]
 #plot_msd(tf,tp)
 
-
-# In[ ]:
-
-
 # Simulate under the fixed tumble failure probability of 0.0 with varying tumble probability
-tf = 0.0
+
+#tp = [1.0,2.0]
 tp = [1.0, 2.0, 4.0, 8.0]
+
+tf_0 = 0.0
 plot_msd(tf,tp)
 
-
-# In[ ]:
-
-
-# Simulate under the fixed tumble failure probability of 0.0 with varying tumble probability
+# Simulate under the fixed tumble failure probability of 0.9 with varying tumble probability
 tf_9 = 0.9
 plot_msd(tf_9,tp)
 
-
-# In[ ]:
-
-
-# Simulate under the fixed tumble failure probability of 0.0 with varying tumble probability
+# Simulate under the fixed tumble failure probability of 0.99 with varying tumble probability
 tf_99 = 0.99
 plot_msd(tf_99,tp)
 
-
-# In[ ]:
-
-
+# Simulate under the fixed tumble failure probability of 0.999 with varying tumble probability
 tf_999 = 0.999
 plot_msd(tf_999,tp)
-
-
-# In[ ]:
-
-
-
 
