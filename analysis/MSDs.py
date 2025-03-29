@@ -5,7 +5,7 @@
 
 
 ### The script produces sample trajectories shown in Fig 1, all trajectory overlays in Supplementary Fig. 1,
-### and Mean-squared Displacement analysis in Fig 3 and Supplementary Fig. 4 & 5
+### and Mean-squared Displacement analysis in Fig 4 and Supplementary Fig. 4 & 5
 import os
 import glob,csv
 import pandas as pd

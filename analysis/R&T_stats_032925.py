@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+##### The script is to classify bacterial motion by assigning the trajectory points to two states: swim and
+##### stall, according to the manuscript; 
+##### then to compute key metrics for Figure 2 & 3 and Supplementary Fig 2, 3, 6 & 7. Last changed March 28, 2025.
 
-
-##### The script is to classify the bacterial motion by assigning the trajectory points two states: run and tumble;
-##### then compute some key metrics for Figure 2 and Supplementary Fig 2 & 3.
 import os
 import glob,csv
 import pandas as pd
@@ -16,6 +15,9 @@ import matplotlib as mpl
 import random
 import matplotlib.ticker as ticker
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy import stats
+from statsmodels.stats.multitest import multipletests
+import itertools
 
 
 # In[ ]:
@@ -168,9 +170,6 @@ files = sorted(files) #sort the files based on the naming
 len(files)
 
 
-# In[ ]:
-
-
 #Include the velocity and angle calculations 
 datadic = {} #set up a data directory
 dev = [] #number of device
@@ -265,9 +264,6 @@ for file in files:
             datadic[device][pillar][disorder]['speed'][dt].append(speeds)        
 
 
-# In[ ]:
-
-
 ###collect the data for all angles and speeds and store it in a DataFrame
 v_theta = []
 for dt in interval:
@@ -301,9 +297,6 @@ df_exploded['a'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
 df_exploded['t'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
 df_exploded = df_exploded.rename(columns={'p':'rescaled_pos', 's':'speed', 'a':'angle', 't':'rescaled_time'})
 # df_exploded['condition'] = df_exploded['condition'].astype('category')
-
-
-# In[ ]:
 
 
 ### compute mean speed and set up several speed and angle threshold candidates
@@ -346,10 +339,7 @@ unconfined_df = df_exploded[(df_exploded['condition'] == unconfined)]
 #     print(format(h_speed_h_angle, ".2%"))
 
 
-# In[ ]:
-
-
-### speed-angle bivariate for the unconfined region [Figure 2a]
+### speed-angle bivariate histogram for the unconfined region [Figure 2b]
 mpl.rcParams['font.family'] = 'Arial'
 fig, ax = plt.subplots(figsize=(8.5,8))
 
@@ -382,59 +372,119 @@ plt.title('Unconfined',fontsize =20)
 plt.legend(fontsize=20, loc='upper right')
 
 plt.tight_layout() 
-plt.savefig('fig2a_hist_bivariate.png',transparent=True, dpi=300)
-plt.close()
+plt.savefig('fig2b_hist_bivariate.png',transparent=True, dpi=300)
+#plt.close()
 
+#### speed-angle jointplot for the unconfined region [partial Supplementary Fig 3]
+# Set font
+plt.rcParams['font.family'] = 'Arial'
 
-# In[ ]:
+speed_unconfined = []
+angle_unconfined = []
+for index, row in unconfined_df.iterrows():
+    speed = row['speed']
+    angle = row['angle']
+    if speed > 0.0 and angle > 0.0:
+        speed_unconfined.append(speed)
+        angle_unconfined.append(angle)
 
+# Create jointplot with histograms
+g = sns.jointplot(
+    x=angle_unconfined, y=speed_unconfined,
+    kind="hist", cmap="plasma", 
+    pthresh=.05, pmax=0.9, 
+    marginal_kws={'color': 'xkcd:pale violet', 'edgecolor': 'black'},  # Marginal histogram styling
+)
 
-### speed-angle bivariate histograms [Supplementary figure 3]
+# Get the main Axes object for the jointplot
+ax_main = g.ax_joint
+
+# Add colorbar manually
+cbar = plt.colorbar(ax_main.collections[0], ax=ax_main, pad=0.02, shrink=0.9)
+cbar.set_label('Count', fontsize=12)
+#cbar.ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x:.3f}'))
+
+# Formatting the main plot
+ax_main.set_xticks([0, np.pi/4, np.pi/2, 3*np.pi/4, np.pi])
+ax_main.set_xticklabels([0, r'$\pi/4$', r'$\pi/2$', r'$3\pi/4$', r'$\pi$'], fontsize=14)
+ax_main.tick_params(axis='y', labelsize=14)
+ax_main.set_xlabel(r'$\delta\theta$ (rad)', fontsize=20)
+ax_main.set_ylabel('Speed, v (µm/s)', fontsize=20)
+ax_main.set_xlim(0, np.pi)
+ax_main.set_ylim(0, 60)
+
+# Add dashed threshold lines
+ax_main.plot(np.linspace(0, np.pi, 20), np.array([half_mean_speed] * 20), linestyle='dashed', linewidth=3, color='gold', label='Speed threshold')
+ax_main.plot(np.array([angle_thresh] * 20), np.linspace(0, 60, 20), linestyle='dashed', linewidth=3, color='xkcd:steel gray', label='Angle threshold')
+
+# Add title and legend
+g.fig.suptitle('Unconfined', fontsize=20,y=0.95)  # Move title above marginal plots
+ax_main.legend(fontsize=14, loc='upper right')
+
+# Show plot
+plt.tight_layout()
+#plt.savefig('jointplot_unconfined.png', transparent=True, dpi=300,bbox_inches='tight')
+#plt.close()
+
+### speed-angle jointplot for all investigated regions [Supplementary Fig 3] 
+# Set font
 mpl.rcParams['font.family'] = 'Arial'
-rows = 4
-cols = 4
-plt.subplots_adjust(hspace=0.6)
-plt.figure(figsize=(rows*4, cols*4))
+
+# Loop through conditions and create plots
 count = 0
+for (condition, gp), ax in zip(df_exploded.groupby('condition'), axes):
+    # Convert speed and angle to numeric
+    gp['speed'] = pd.to_numeric(gp['speed'], errors='coerce')
+    gp['angle'] = pd.to_numeric(gp['angle'], errors='coerce')
 
-for (condition, gp) in df_exploded.groupby('condition'):
-    gp['speed'] = gp['speed'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
-    gp['angle'] = gp['angle'].apply(lambda x: pd.to_numeric(x, errors='coerce'))
-    
-    speed_valid = []
-    angle_valid = []   
+    # Filter valid values
+    speed_valid = gp.loc[(gp['speed'] > 0) & (gp['angle'] > 0), 'speed']
+    angle_valid = gp.loc[(gp['speed'] > 0) & (gp['angle'] > 0), 'angle']
+
+    # Create jointplot with histograms
+    g = sns.jointplot(
+        x=angle_valid, y=speed_valid,
+        kind="hist", cmap="plasma", 
+        pthresh=.05, pmax=0.9,
+        marginal_kws={'color': 'xkcd:pale violet', 'edgecolor': 'black'},  # Marginal histogram styling
+    )
+
+    # Get the main Axes object for the jointplot
+    ax_main = g.ax_joint
+
+    # Add colorbar manually
+    cbar = plt.colorbar(ax_main.collections[0], ax=ax_main, pad=0.02, shrink=0.9)
+    cbar.set_label('Count', fontsize=12)
+    #cbar.ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x:.3f}'))
+
+    # Formatting the main plot
+    ax_main.set_xticks([0, np.pi/4, np.pi/2, 3*np.pi/4, np.pi])
+    ax_main.set_xticklabels([0, r'$\pi/4$', r'$\pi/2$', r'$3\pi/4$', r'$\pi$'], fontsize=14)
+    ax_main.tick_params(axis='y', labelsize=14)
+    ax_main.set_xlabel(r'$\delta\theta$ (rad)', fontsize=20)
+    ax_main.set_ylabel('Speed, v (µm/s)', fontsize=20)
+    ax_main.set_xlim(0, np.pi)
+    ax_main.set_ylim(0, 60)
+
+    # Add dashed threshold lines
+    ax_main.plot(np.linspace(0, np.pi, 20), np.array([half_mean_speed] * 20), linestyle='dashed', linewidth=3, color='gold', label='Speed threshold')
+    ax_main.plot(np.array([angle_thresh] * 20), np.linspace(0, 60, 20), linestyle='dashed', linewidth=3, color='xkcd:steel gray', label='Angle threshold')
+
+    # Add title and legend
+    g.fig.suptitle(f'{condition}', fontsize=20, y=0.95)  # Move title above marginal plots
+    ax_main.legend(fontsize=14, loc='upper right')
+
     count += 1
-    
-    ax = plt.subplot(rows,cols,count)
-    ax.set_box_aspect(1)
-    for index, row in gp.iterrows():
-        speed = row['speed']
-        angle = row['angle']
-        
-        if speed > 0:
-            speed_valid.append(speed)
-            angle_valid.append(angle)
+#     if count >= rows * cols:  # Stop if we've plotted enough conditions
+#         break
 
-    sns.histplot(x=angle_valid,y=speed_valid,ax=ax, pthresh=.05, pmax=0.9, cbar=True, cbar_kws={'shrink': 0.8, 'pad': 0.02, 'label': 'Count'})
-    plt.xticks([0, np.pi/4, np.pi/2,3*np.pi/4, np.pi],[0, r'$\pi/4$', r'$\pi/2$', r'$3\pi/4$', r'$\pi$'])
-    plt.xlabel('δθ (rad)',fontsize=14)
-    plt.ylim(0,60)
-    plt.plot(np.linspace(0,np.pi,20),np.array([half_mean_speed]*20),linestyle='dashed',linewidth=3,color='gold',label=
-            'Speed threshold')
-    
-    plt.plot(np.array([angle_thresh]*20),np.linspace(0,70,20),linestyle='dashed',linewidth=3,color='pink',label='Angle threshold')
-    plt.ylabel('Speed, v (µm/s)',fontsize=14)
-    plt.title(f' {condition} ',fontsize =14)
-    plt.legend(fontsize=10, loc='upper right')
-    
+    # Adjust layout for better spacing
+    plt.tight_layout()
 
-plt.tight_layout() 
-plt.savefig('suppfig3.png', dpi = 300)
-plt.close()
-
-
-# In[ ]:
-
+    # Save the large plot
+    plt.savefig(f'suppfig3_jointplot_{condition}.png', transparent=True, dpi=300)
+    #plt.show()
+    #plt.close()
 
 ### Sensitivity Check for Speed & Angle Thresholds
 mpl.rcParams['font.family'] = 'Arial'
@@ -548,7 +598,7 @@ plt.close()
 # In[ ]:
 
 
-### Select sample trajectories from the unconfined condition [Figure 2b]
+#### Two selected sample trajectories from the unconfined condition [Figure 2c]
 # Specified indices
 mpl.rcParams['font.family'] = 'Arial'
 random_indices = [11, 55]
@@ -603,7 +653,7 @@ for index, sub_df in traj:
         cbar.ax.tick_params(labelsize=20)
         scatter = ax.scatter(path_tumble[:, 0], path_tumble[:, 1],s=15, linewidth=1, color='xkcd:barney purple',zorder=2) # s is the size of the points
         
-        plt.savefig(f'fig2b_unc_traj_{index}.png',dpi=300)
+        plt.savefig(f'fig2c_unc_traj_{index}.png',dpi=300)
         #plt.show()
         plt.close()
         
@@ -640,7 +690,7 @@ for index, sub_df in traj:
         scatter = ax.scatter(path_tumble[:, 0], path_tumble[:, 1],s=50, linewidth=2, color='xkcd:barney purple',zorder=2) # s is the size of the points
         #scatter = ax.scatter(path_uncluster[:, 0], path_uncluster[:, 1],s=20, facecolors='none', edgecolors='gray',zorder=0)
        
-        plt.savefig(f'fig2b_traj{index}_enlarged.png',transparent = True, dpi=300)
+        plt.savefig(f'fig2c_traj{index}_enlarged.png',transparent = True, dpi=300)
         #plt.show()
         plt.close()
 
@@ -648,7 +698,7 @@ for index, sub_df in traj:
 # In[ ]:
 
 
-##### Sample trajectory (partial), state bar, and the speed-angle bivariate in Figure 2c
+##### Sample trajectory (partial), state bar, and the speed-angle bivariate lineplot [Figure 2d]
 ### sample trajectory (partial)
 mpl.rcParams['font.family'] = 'Arial'
 for index, sub_df in traj:
@@ -685,7 +735,7 @@ for index, sub_df in traj:
         scatter = ax.scatter(path_tumble[:32, 0], path_tumble[:32, 1],s=15, linewidth=1, color='xkcd:barney purple',zorder=2) # s is the size of the points
         #scatter = ax.scatter(path_uncluster[:, 0], path_uncluster[:, 1],s=15, color='grey',zorder=3)
         
-        plt.savefig(f'fig2c_traj.png',transparent=True, dpi=300)
+        plt.savefig(f'fig2d_traj.png',transparent=True, dpi=300)
         #plt.show()
         plt.close()
         
@@ -748,11 +798,11 @@ ax.set_xlabel('Time (s)')
 plt.xticks(np.arange(0.0,22.0,2.0),fontsize=20) 
 ax.get_yaxis().set_visible(False)
 plt.subplots_adjust(bottom=0.5)
-plt.savefig('fig2c_bar.png',bbox_inches='tight', transparent = True, dpi=300)
+plt.savefig('fig2d_bar.png',bbox_inches='tight', transparent = True, dpi=300)
 #plt.show()
 plt.close()
 
-### speed-angle bivariate
+### speed-angle bivariate 
 #defined a function to extract the speed, angle, timepoint info
 def speedangle(speed_thresh, angle_thresh, df: pd.DataFrame):
     
@@ -813,7 +863,7 @@ ax2.set_yticks(np.arange(0,6/4*np.pi,1/4*np.pi),[0, r'$\pi/4$', r'$\pi/2$', r'$3
 plt.yticks(fontsize=20)
 ax2.tick_params(axis='y', labelcolor=color2)
 plt.legend(loc='upper center',fontsize='large')
-plt.savefig('fig2c_bivariate.png',bbox_inches='tight', transparent = True, dpi=300)
+plt.savefig('fig2d_bivariate_lineplot.png',bbox_inches='tight', transparent = True, dpi=300)
 #plt.show()
 plt.close()
 
@@ -821,7 +871,7 @@ plt.close()
 # In[ ]:
 
 
-##### Compute and store the key metrics: run time, tumble time, run proportion & tumble proportion
+##### Compute and store the key metrics: run time (swim time), tumble time (stall time), run (swim) proportion & tumble (stall) proportion
 def convert_to_numeric(pos):
     if isinstance(pos, list):
         return [pd.to_numeric(coord, errors='coerce') for coord in pos]
@@ -904,145 +954,195 @@ for condition, tumble_dts in tumble_dts_all.items():
         
 df_tumble_dts = pd.DataFrame(data6)
 
+#### Boxplot: Swim time across conditions [Figure 3a]
+# Set font
+plt.rcParams['font.family'] = 'Arial'
 
-# In[ ]:
+# Define the desired order
+desired_order = [
+    'Unc; no pillar',
+    'C = 6 µm; D = 0', 'C = 6 µm; D = 1', 'C = 6 µm; D = 2', 'C = 6 µm; D = 3',
+    'C = 2.6 µm; D = 0', 'C = 2.6 µm; D = 1', 'C = 2.6 µm; D = 2', 'C = 2.6 µm; D = 3',
+    'C = 1.3 µm; D = 0', 'C = 1.3 µm; D = 1', 'C = 1.3 µm; D = 2', 'C = 1.3 µm; D = 3']
+ 
+plt.figure(figsize=(8, 6))
+sns.boxplot(x='Condition', y='Run_T', data=df_run_dts, order=desired_order, palette='Blues',width=0.6,
+            showfliers=False, showmeans=True,meanprops={"marker":"o", "markerfacecolor":"white", "markeredgecolor":"black", "markersize":10})
 
+plt.ylim(0,3.2)
+plt.ylabel('Swim time (s)',fontsize=24)
+plt.xlabel('Condition',fontsize=18)
+plt.xticks(rotation=45, fontsize=16)  # Rotate x-axis labels if necessary
+plt.yticks(fontsize=22)
+plt.title('Swim time across conditions',fontsize=24)
+plt.savefig('fig3_swim_time.pdf', transparent=True, dpi=300)
+plt.show()
 
-## compute the mean and std run times
-mean_run = []
-std_run = []
+#### Boxplot: Stall time across conditions [Figure 3b]
+# Set font
+plt.rcParams['font.family'] = 'Arial'
 
-for index, gp in df_run_dts.groupby('Condition'):
-    run_durations = np.array(gp['Run_T'])
-    mean_run.append(np.mean(run_durations))
-    std_run.append(np.std(run_durations))
+# Define the desired order
+desired_order = [
+    'Unc; no pillar',
+    'C = 6 µm; D = 0', 'C = 6 µm; D = 1', 'C = 6 µm; D = 2', 'C = 6 µm; D = 3',
+    'C = 2.6 µm; D = 0', 'C = 2.6 µm; D = 1', 'C = 2.6 µm; D = 2', 'C = 2.6 µm; D = 3',
+    'C = 1.3 µm; D = 0', 'C = 1.3 µm; D = 1', 'C = 1.3 µm; D = 2', 'C = 1.3 µm; D = 3']
+ 
+plt.figure(figsize=(8, 6))
+sns.boxplot(x='Condition', y='Tumble_T', data=df_tumble_dts, order=desired_order, palette='Reds',
+            showfliers=False, width=0.6, showmeans=True, meanprops={"marker":"o", "markerfacecolor":"white", "markeredgecolor":"black", "markersize":10})
+
+plt.ylim(0,1.3)
+plt.ylabel('Stall time (s)',fontsize=24)
+plt.xlabel('Condition',fontsize=18)
+plt.xticks(rotation=45, fontsize=16)  # Rotate x-axis labels if necessary
+plt.yticks(fontsize=22)
+plt.title('Stall time across conditions',fontsize=24)
+plt.savefig('fig3b_stall_time.pdf', transparent=True, dpi=300)
+plt.show()
+
+#### Significance test of swim times and plot a heatmap for the pair-wise comparisons [Supplementary Fig 6] 
+# Get all unique condition pairs
+conditions = df_run_dts['Condition'].unique()
+pairs = list(itertools.combinations(conditions, 2))  # Generate all pairwise combinations
+
+# Store p-values for significance testing
+p_values_run = {}
+
+for cond1, cond2 in pairs:
+    # Extract run times for each condition
+    runs_1 = df_run_dts[df_run_dts['Condition'] == cond1]['Run_T']
+    runs_2 = df_run_dts[df_run_dts['Condition'] == cond2]['Run_T']
     
-## compute the mean and std tumble times   
-mean_tumble = []
-std_tumble = []
-
-for index, gp in df_tumble_dts.groupby('Condition'):
-    tumble_durations = np.array(gp['Tumble_T'])
-    mean_tumble.append(np.mean(tumble_durations))
-    std_tumble.append(np.std(tumble_durations))
+    # Check normality using Shapiro-Wilk test
+    _, p1 = stats.shapiro(runs_1)
+    _, p2 = stats.shapiro(runs_2)
     
-## re-arrange the stats for plotting     
-mean_run_d_unc = [mean_run[-1]]+[np.nan]*3
-mean_run_d_6um = mean_run[8:12]
-mean_run_d_3um = mean_run[4:8]
-mean_run_d_1um = mean_run[:4]
+    if p1 > 0.05 and p2 > 0.05:  # If both are normally distributed
+        # Use independent t-test
+        print(True)
+        stat, p_val = stats.ttest_ind(runs_1, runs_2, equal_var=False)  # Welch’s t-test
+    else:
+        # Use Mann-Whitney U test (non-parametric)
+        stat, p_val = stats.mannwhitneyu(runs_1, runs_2, alternative='two-sided')
+    
+    p_values_run[(cond1, cond2)] = p_val
 
-std_run_d_unc = [std_run[-1]]+[np.nan]*3
-std_run_d_6um = std_run[8:12]
-std_run_d_3um = std_run[4:8]
-std_run_d_1um = std_run[:4]
+# Display results
+# for (cond1, cond2), p_val in p_values_run.items():
+#     significance = 'Significant' if p_val < 0.05 else 'Not Significant'
+#     print(f"Comparison {cond1} vs {cond2}: p-value = {p_val:.5f} ({significance})")
+    
+# Apply Bonferroni correction
+p_adjusted = multipletests(list(p_values_run.values()), method='bonferroni')[1]
 
-mean_tumble_d_unc =  [mean_tumble[-1]]+[np.nan]*3
-mean_tumble_d_6um = mean_tumble[8:12]
-mean_tumble_d_3um = mean_tumble[4:8]
-mean_tumble_d_1um = mean_tumble[:4]
-
-std_tumble_d_unc = [std_tumble[-1]]+[np.nan]*3
-std_tumble_d_6um = std_tumble[8:12]
-std_tumble_d_3um = std_tumble[4:8]
-std_tumble_d_1um = std_tumble[:4]
-
-## Plot mean run & tumble times
+# Display corrected p-values
+# for (cond1, cond2), adj_p in zip(p_values_run.keys(), p_adjusted):
+#     significance = 'Significant' if adj_p < 0.05 else 'Not Significant'
+#     print(f"Bonferroni-corrected {cond1} vs {cond2}: p-value = {adj_p:.4f} ({significance})")
+    
 mpl.rcParams['font.family'] = 'Arial'
-t_run_means = {
-    'Unc': mean_run_d_unc,
-    '6 µm': mean_run_d_6um,
-    '2.6 µm': mean_run_d_3um,
-    '1.3 µm': mean_run_d_1um
-}
+# Get all unique conditions
+conditions = df_run_dts['Condition'].unique()
+pairs = list(itertools.combinations(conditions, 2))
 
-# Error values
-t_run_errors = {
-   'Unc': std_run_d_unc,
-    '6 µm': std_run_d_6um,
-    '2.6 µm': std_run_d_3um,
-    '1.3 µm': std_run_d_1um
-}
-disorder = ['0', '1', '2',  '3']
-x = np.arange(len(disorder))  # the label locations
-width = 0.17 # the width of the bars
-multiplier = 0
+# Initialize p-values dictionary
+p_values_run = {}
 
-fig, ax = plt.subplots(figsize=(6, 4))#, layout='constrained')
+# Compute p-values for each pair
+for cond1, cond2 in pairs:
+    runs_1 = df_run_dts[df_run_dts['Condition'] == cond1]['Run_T']
+    runs_2 = df_run_dts[df_run_dts['Condition'] == cond2]['Run_T']
+    
+    # Check normality
+    _, p1 = stats.shapiro(runs_1)
+    _, p2 = stats.shapiro(runs_2)
+    
+    if p1 > 0.05 and p2 > 0.05:  
+        stat, p_val = stats.ttest_ind(runs_1, runs_2, equal_var=False)  # Welch’s t-test
+    else:
+        stat, p_val = stats.mannwhitneyu(runs_1, runs_2, alternative='two-sided')
+    
+    p_values_run[(cond1, cond2)] = p_val
 
-colors = ['xkcd:slate blue','xkcd:azure','xkcd:bright blue','xkcd:navy blue']
+# Apply Bonferroni correction
+p_adjusted = multipletests(list(p_values_run.values()), method='bonferroni')[1]
+adjusted_p_values = dict(zip(p_values_run.keys(), p_adjusted))
 
-# Plotting the bars with error bars
-for condition, measurement in t_run_means.items():
-    error = t_run_errors[condition]
-    offset = width * multiplier 
-    color = 'xkcd:mid blue'
-    rects = ax.errorbar(x+offset, measurement,fmt='o', label=condition, color=colors[multiplier], yerr=error, capsize=5, linewidth=2)
-    multiplier += 1
+# Convert to DataFrame for heatmap
+p_matrix = pd.DataFrame(np.nan, index=conditions, columns=conditions)
 
-# Add some text for labels, title and custom x-axis tick labels, etc.
-ax.set_title('Mean run time',fontsize=16)
-ax.set_xlabel('D',fontsize=16)
-ax.set_ylabel(r'$< T_{\mathrm{Run}} >$ (s)', fontsize=16)
-ax.set_xticks(x+width,disorder)
-plt.xticks(fontsize=16)
-ax.legend(loc='upper right', ncol=2, fontsize=10)
+for (cond1, cond2), p_val in adjusted_p_values.items():
+    p_matrix.loc[cond1, cond2] = round(p_val,4)
+    p_matrix.loc[cond2, cond1] = round(p_val,4)  # Fill symmetric values
 
-plt.yticks([-0.4,0,0.4,0.8,1.2,1.6,2.0], fontsize=16)
-plt.ylim(-0.4,2.0)
-plt.savefig('fig2d_run_t.png',transparent=True,dpi=300)
-#plt.show()
-plt.close()
+# Plot heatmap
+plt.figure(figsize=(10, 8))
+sns.heatmap(p_matrix, annot=True, cmap="coolwarm_r", vmax=0.06, linewidths=0.5, cbar_kws={'label': 'Bonferroni-adjusted p-value', 'ticks': [0, 0.01, 0.02, 0.03, 0.04, 0.05]})
+#plt.title("Heatmap of pairwise Mann-Whitney U test for swim times")
+plt.xticks(rotation=45, ha='right',fontsize=12) # Rotate the x axis labels
+plt.yticks(rotation=0,fontsize=12)
+plt.tight_layout()
+plt.savefig('suppfig6_sigtest_swimtime.png',dpi=500,transparent=True)
+plt.show() 
 
-# Data for bar plot
-t_tumble_means = {
-    'Unc': mean_tumble_d_unc,
-    '6 µm': mean_tumble_d_6um,
-    '2.6 µm': mean_tumble_d_3um,
-    '1.3 µm': mean_tumble_d_1um
-}
+#### Significance test of stall times and plot a heatmap for the pair-wise comparisons [Supplementary Fig 7]
+mpl.rcParams['font.family'] = 'Arial'
+# Get all unique condition pairs
+conditions = df_tumble_dts['Condition'].unique()
+pairs = list(itertools.combinations(conditions, 2))  # Generate all pairwise combinations
 
-# Error values
-t_tumble_errors = {
-   'Unc': std_tumble_d_unc,
-    '6 µm': std_tumble_d_6um,
-    '2.6 µm': std_tumble_d_3um,
-    '1.3 µm': std_tumble_d_1um
-}
-disorder = ['0', '1', '2',  '3']
-x = np.arange(len(disorder))  # the label locations
-width = 0.17 # the width of the bars
-multiplier = 0
+# Store p-values for significance testing
+p_values_tumble = {}
 
-fig, ax = plt.subplots(figsize=(6, 4))#, layout='constrained')
+for cond1, cond2 in pairs:
+    # Extract run times for each condition
+    tumble_1 = df_tumble_dts[df_tumble_dts['Condition'] == cond1]['Tumble_T']
+    tumble_2 = df_tumble_dts[df_tumble_dts['Condition'] == cond2]['Tumble_T']
+    
+    # Check normality using Shapiro-Wilk test
+    _, p1 = stats.shapiro(tumble_1)
+    _, p2 = stats.shapiro(tumble_2)
+    
+    if p1 > 0.05 and p2 > 0.05:  # If both are normally distributed
+        # Use independent t-test
+        print(True)
+        stat, p_val = stats.ttest_ind(tumble_1, tumble_2, equal_var=False)  # Welch’s t-test
+    else:
+        
+        # Use   (non-parametric)
+        stat, p_val = stats.mannwhitneyu(tumble_1, tumble_2, alternative='two-sided')
+    
+    p_values_tumble[(cond1, cond2)] = p_val
 
-colors = ['xkcd:grey purple', 'xkcd:pale purple','xkcd:purple', 'xkcd:barney purple','xkcd:deep violet']
-# Plotting the bars with error bars
-for condition, measurement in t_tumble_means.items():
-    error = t_tumble_errors[condition]
-    offset = width * multiplier 
-    color = 'xkcd:mid blue'
-    rects = ax.errorbar(x+offset, measurement,fmt='o', label=condition, color=colors[multiplier], yerr=error, capsize=5, linewidth=2)
-    multiplier += 1
+# Display results
+# for (cond1, cond2), p_val in p_values_tumble.items():
+#     significance = 'Significant' if p_val < 0.05 else 'Not Significant'
+#     print(f"Comparison {cond1} vs {cond2}: p-value = {p_val:.5f} ({significance})")
+    
+# Apply Bonferroni correction
+p_adjusted = multipletests(list(p_values_tumble.values()), method='bonferroni')[1]
+adjusted_p_values = dict(zip(p_values_run.keys(), p_adjusted))
 
-# Add some text for labels, title and custom x-axis tick labels, etc.
-ax.set_title('Mean tumble time',fontsize=16)
-ax.set_xlabel('D',fontsize=16)
-ax.set_ylabel(r'$< T_{\mathrm{Tumble}} >$ (s)', fontsize=16)
-ax.set_xticks(x+width,disorder)
-plt.xticks(fontsize=16)
-ax.legend(loc='upper left', ncol=2, fontsize=10)
+# Convert to DataFrame for heatmap
+p_matrix = pd.DataFrame(np.nan, index=conditions, columns=conditions)
 
-plt.yticks([-0.4,-0.2,0,0.2,0.4,0.6,0.8,1.0,1.2], fontsize=16)
+for (cond1, cond2), p_val in adjusted_p_values.items():
+    p_matrix.loc[cond1, cond2] = round(p_val,4)
+    p_matrix.loc[cond2, cond1] = round(p_val,4)  # Fill symmetric values
 
-plt.ylim(-0.4,1.1)
-plt.savefig('fig2d_tumble_t.png',transparent=True,dpi=300)
-#plt.show()
-plt.close()
+# Plot heatmap
+plt.figure(figsize=(10, 8))
+sns.heatmap(p_matrix, annot=True, cmap="coolwarm_r", vmax=0.06, linewidths=0.5, cbar_kws={'label': 'Bonferroni-adjusted p-value', 'ticks': [0, 0.01, 0.02, 0.03, 0.04, 0.05]})
+#plt.title("Heatmap of pairwise Mann-Whitney U test for stall times")
+plt.xticks(rotation=45, ha='right',fontsize=12)
+plt.yticks(rotation=0,fontsize=12)
+plt.tight_layout()
+plt.savefig('suppfig7-sigtest-stalltime.png',dpi=500,transparent=True)
+plt.show()
 
-# In[ ]:
-
-### compute tumble bias
+#### compute mean tumble (stall) bias [Figure 3c]
 Tumbles = []
 for condition, t in tumble_t_all.items():
     tumbles = []
@@ -1105,5 +1205,5 @@ plt.ylabel("C", fontsize=18)  # Y-axis label size
 plt.title('Tumble bias')
 plt.xticks(fontsize=18)  # X-axis tick label size
 plt.yticks(fontsize=18)
-plt.savefig('fig2e_htmp_tb.png', dpi=300,transparent=True)
+plt.savefig('fig3c_htmp_tb.png', dpi=300,transparent=True)
 plt.close()
