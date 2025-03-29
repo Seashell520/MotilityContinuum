@@ -1,0 +1,89 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  Bacterial motility patterns vary smoothly with spatial
+  confinement and disorder
+message: >-
+  If you use this dataset, please cite it using the metadata
+  from this file.
+type: dataset
+authors:
+  - given-names: Haibei
+    family-names: Zhang
+    email: haibei520@uchicago.edu
+    affiliation: University of Chicago
+    orcid: 'https://orcid.org/0009-0006-7607-4649'
+  - given-names: Miles
+    family-names: T. Wetherington
+    orcid: 'https://orcid.org/0000-0002-2738-6164'
+    affiliation: Georgia Institute of Technology
+  - given-names: Hungtang
+    family-names: Ko
+    orcid: 'https://orcid.org/0000-0001-6250-6144'
+    affiliation: Princeton University
+  - given-names: Cody
+    family-names: E. FitzGerald
+    affiliation: Northwestern University
+    orcid: 'https://orcid.org/0000-0002-1646-6214'
+  - given-names: Leone
+    family-names: V. Luzzatto
+    affiliation: Northwestern University
+  - given-names: István
+    family-names: A. Kovács
+    affiliation: Northwestern University
+    orcid: 'https://orcid.org/0000-0002-6890-6277'
+  - given-names: Edwin
+    family-names: M. Munro
+    affiliation: University of Chicago
+    orcid: 'https://orcid.org/0000-0001-5535-5675'
+  - given-names: Jasmine
+    family-names: A. Nirody
+    affiliation: University of Chicago
+    orcid: 'https://orcid.org/0000-0002-0461-1031'
+identifiers:
+  - type: doi
+    value: 10.5200/github.2025
+abstract: >-
+  In unconfined environments, bacterial motility patterns
+  are an explicit expression of the internal states of the
+  cell. Bacteria operating a run-and-tumble behavioral
+  program will swim forward when in a ‘run’ state, and will
+  be stalled in place when in a reorienting ‘tumble’ state.
+  However, in natural environments, motility dynamics often
+  represent a convolution of bacterial behavior and
+  environmental constraints. Recent investigations showed
+  that Escherichia coli swimming through highly confined
+  porous media exhibit extended periods of ‘trapping’
+  punctuated by forward ‘hops’, a seemingly drastic
+  restructuring of run-and-tumble behavior. We introduce a
+  microfluidic device to systematically explore bacterial
+  motility in a range of spatially structured environments,
+  bridging the extremes of unconfined and highly confined
+  conditions. We observe that trajectories reflecting
+  unconstrained expression of run-and-tumble behavior and
+  those reflecting ‘hop-and-trap’ dynamics coexist in all
+  structured environments considered, with ensemble dynamics
+  transitioning smoothly between these two extremes.
+  Therefore, we present a unifying ‘swim-and-stall’
+  framework to characterize this continuum of observed
+  motility patterns and demonstrate how bacteria employing a
+  consistent set of behavioral rules can present motility
+  patterns that smoothly transition between the two
+  extremes. Our results indicate that the control program
+  underlying run-and-tumble motility is robust to changes in
+  environment, allowing flagellated bacteria to navigate and
+  adapt to a diverse range of complex, dynamic habitats
+  using the same set of behavioral rules.
+keywords:
+  - motility
+  - bacterial locomotion
+  - E. coli
+  - microfluidics
+  - microbial biophysics
+  - porous media
+license: CC-BY-NC-4.0
+commit: 032925
+version: '2'
+date-released: '2025-03-29'
