@@ -5,7 +5,7 @@
 
 
 ### The script produces sample trajectories shown in Fig 1, all trajectory overlays in Supplementary Fig. 1,
-### and Mean-squared Displacement analysis in Fig 4 and Supplementary Fig. 4 & 5
+### and Mean-squared Displacement analysis in Fig 4 and Supplementary Fig. 4 & 5. Last changed on March 29, 2025.
 import os
 import glob,csv
 import pandas as pd
@@ -33,7 +33,7 @@ files = sorted(files) #sort the files based on the naming
 # In[ ]:
 
 
-##### Plot maps for sample trajectories!
+##### Plot maps for sample trajectories [Figure 1c]
 
 #Construct a dictionary for data storage and analysis
 datadic = {} #set up a data directory
@@ -361,7 +361,7 @@ for file in files:
     
 #     plt.show() 
 
-### Plot track overlays (Supplementary Figure 1)
+### Plot track overlays [Supplementary Figure 1]
 mpl.rcParams['font.family'] = 'Arial'
 rows = 4
 cols = 4
@@ -519,7 +519,7 @@ plt.close()
 # In[ ]:
 
 
-### Plot ensemble MSDs 6 um confinement [Figure 3a left]
+### Plot ensemble MSDs 6 um confinement [Figure 4a left]
 mpl.rcParams['font.family'] = 'Arial'
 colors = ['xkcd:grey'] + sns.color_palette('Blues_r') 
 name = ['Unc', 'D = 0', 'D = 1',  'D = 2', 'D = 3']
@@ -562,10 +562,10 @@ handles, labels = plt.gca().get_legend_handles_labels()
 by_label = dict(zip(labels, handles))   
 plt.legend(by_label.values(), by_label.keys(), loc='upper left',fontsize=18)
 plt.tight_layout()
-plt.savefig('fig3a_eMSD_6um.png', transparent=True, dpi = 300) 
+plt.savefig('fig4a_eMSD_6um.png', transparent=True, dpi = 300) 
 plt.close()
 
-### Plot ensemble MSDs 2.6 um confinement [Figure 3c center]
+### Plot ensemble MSDs 2.6 um confinement [Figure 4a center]
 plt.rcParams['font.family'] = 'Arial'
 colors = ['xkcd:grey', 'xkcd:rust', 'xkcd:orange', 'xkcd:peach','xkcd:golden']
 
@@ -607,10 +607,10 @@ handles, labels = plt.gca().get_legend_handles_labels()
 by_label = dict(zip(labels, handles))            
 plt.legend(by_label.values(), by_label.keys(), loc='upper left',fontsize=18)
 plt.tight_layout()
-plt.savefig('fig3a_eMSD_3um.png', transparent=True, dpi = 300) 
+plt.savefig('fig4a_eMSD_3um.png', transparent=True, dpi = 300) 
 plt.close()
 
-### Plot ensemble MSDs 1.3 um confinement [Figure 3a right]
+### Plot ensemble MSDs 1.3 um confinement [Figure 4a right]
 plt.rcParams['font.family'] = 'Arial'
 colors = ['xkcd:grey', 'xkcd:navy green', 'xkcd:dark cyan', 'xkcd:jade','xkcd:slime green']
 
@@ -652,14 +652,14 @@ handles, labels = plt.gca().get_legend_handles_labels()
 by_label = dict(zip(labels, handles))            
 plt.legend(by_label.values(), by_label.keys(), loc='upper left',fontsize=18)
 plt.tight_layout()
-plt.savefig('fig3a_eMSD_1um.png', transparent=True, dpi = 300)
+plt.savefig('fig4a_eMSD_1um.png', transparent=True, dpi = 300)
 plt.close()
 
 
 # In[ ]:
 
 
-##### Use power law to fit MSDs
+##### Use power law to fit MSDs [Figure 4b & Supplementary Figure 5]
 # Define the power law function
 def power_law(t, A, ν):
     return A * t**ν
@@ -740,13 +740,11 @@ for dev in list(datadic):
             plt.legend(loc='upper left', fontsize=16)
 
 plt.tight_layout()
-plt.savefig('fig3b&suppfig5_MSDfit.png',transparent=True,dpi=300)
+plt.savefig('fig4b&suppfig5_MSDfit.png',transparent=True,dpi=300)
 plt.close()
 
 
-# In[ ]:
-
-
+#### Heatmap of nv across conditions at early times [Figure 4c]
 nv = []
 for i in slopes_all:
     i = round(i,2)
@@ -789,6 +787,6 @@ plt.ylabel("C", fontsize=20)  # Y-axis label size
 plt.xticks(fontsize=18)  # X-axis tick label size
 plt.yticks(fontsize=18)
 
-plt.savefig('fig3d_htmp.png', dpi=300,transparent=True)
+plt.savefig('fig4c_htmp.png', dpi=300,transparent=True)
 plt.close()
 
