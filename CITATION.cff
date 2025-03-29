@@ -12,7 +12,6 @@ type: dataset
 authors:
   - given-names: Haibei
     family-names: Zhang
-    email: haibei520@uchicago.edu
     affiliation: University of Chicago
     orcid: 'https://orcid.org/0009-0006-7607-4649'
   - given-names: Miles
@@ -40,6 +39,7 @@ authors:
     orcid: 'https://orcid.org/0000-0001-5535-5675'
   - given-names: Jasmine
     family-names: A. Nirody
+    email: jnirody@uchicago.edu
     affiliation: University of Chicago
     orcid: 'https://orcid.org/0000-0002-0461-1031'
 identifiers:
