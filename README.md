@@ -1,5 +1,5 @@
 
-## Swim and stall: Bacterial motility patterns adapt smoothly in response to spatial confinement and disorder
+### Bacterial motility patterns adapt smoothly in response to spatial confinement and disorder
 
 ### Abstract
 
