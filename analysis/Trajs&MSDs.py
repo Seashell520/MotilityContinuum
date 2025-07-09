@@ -491,6 +491,76 @@ for dev in list(datadic):
                 t = np.arange(0.05, time, 0.05)
                 
                 #print(len(mean_MSD[-1][1:int(lagmax_global*fps)]))
+                plt.loglog(t, mean_MSD[-1][1:int(time*fps)], color = 'lavender', label = 'Individual MSD', linewidth = 1,zorder=0)
+                plt.xlabel('Lag time τ (s)',fontsize=22)
+                plt.ylabel('MSD (µm²)',fontsize=22)
+                plt.xticks(fontsize=20)
+                plt.yticks(fontsize=20)
+                #plt.loglog(std_MSD[-1], alpha = 1/len(datadic[dev][pil][dis]), color = 'blue')
+            lagmax_global = cutoff[count-1]
+            t = np.arange(0.05, lagmax_global, 0.05)
+            meanofmeans_MSD.append(np.nanmean(np.array(list(it.zip_longest(*mean_MSD)),dtype=float),axis=1))
+            emsd = np.array(meanofmeans_MSD[-1][1:int(lagmax_global*fps)])
+            #meanofstds_MSD.append(np.nanmean(np.array(list(it.zip_longest(*std_MSD)),dtype=float),axis=1))
+            plt.loglog(t, emsd,color='dodgerblue',linewidth = 3, label = 'Mean of MSDs',zorder=1) 
+            #plt.loglog(meanofstds_MSD[-1][:800],color='violet') 
+            ax.set_title(conditions[count-1], fontsize=20)
+            
+            #Remove duplicate labels by putting them in a dictionary before calling legend()! :) Reference: https://stackoverflow.com/questions/13588920/stop-matplotlib-repeating-labels-in-legend
+            handles, labels = plt.gca().get_legend_handles_labels()
+            by_label = dict(zip(labels, handles))
+            plt.legend(by_label.values(), by_label.keys(), loc='upper left')
+            #plt.legend(loc='upper left')
+plt.tight_layout()
+plt.savefig('suppfig_indMSDeMSD_unnormalized.png', dpi = 300)
+#plt.close()
+
+
+#Plot normalized, individual MSDs and ensemble MSDs in subplots [Supplementary Figure 5]. 
+mpl.rcParams['font.family'] = 'Arial'
+rows = 4
+cols = 4
+plt.subplots_adjust(hspace=0.6)
+plt.figure(figsize=(4*cols, 4*rows))
+#plt.suptitle('Mean-squared Displacements', fontsize = 20)
+count = 0
+
+conditions = ['Unc', 'C = 6 µm; D = 0', 'C = 6 µm; D = 1', 'C= 6 µm; D = 2', 'C= 6 µm; D = 3',
+       'C = 2.6 µm; D = 0', 'C = 2.6 µm; D = 1', 'C = 2.6 µm; D = 2', 'C = 2.6 µm; D = 3', 
+        'C = 1.3 µm; D = 0', 'C = 1.3 µm; D = 1', 'C = 1.3 µm; D = 2', 'C = 1.3 µm; D = 3']
+
+meanofmeans_MSD = []
+meanofstds_MSD = []
+
+for dev in list(datadic):
+    for pil in list(datadic[dev]):
+        for dis in list(datadic[dev][pil]):
+            
+            count += 1
+            ax = plt.subplot(rows,cols,count)
+            
+            mean_MSD = []
+            std_MSD = []
+
+            #print(len(datadic[dev][pil][dis]['time']))
+            #print(len(datadic[dev][pil][dis]['MSD']))
+            for tr in range(len(datadic[dev][pil][dis]['MSD'])-1):
+                mean_MSD.append(np.zeros(len(datadic[dev][pil][dis]['MSD'][tr])))
+                std_MSD.append(np.zeros(len(datadic[dev][pil][dis]['MSD'][tr])))
+                #print(len(mean_MSD[-1]))
+                for i in range(len(mean_MSD[-1])):
+                    mean_MSD[-1][i] = np.mean(datadic[dev][pil][dis]['MSD'][tr][i])
+                    std_MSD[-1][i] = np.std(datadic[dev][pil][dis]['MSD'][tr][i])
+                    #print(len(datadic[dev][pil][dis]))
+                    #print(mean_MSD[-1][:800])
+                lagmax_global = cutoff[count-1]
+                lagmax_local = len(mean_MSD[-1][1:])/fps
+                #print(lagmax_local)
+                time = min(lagmax_global,lagmax_local)
+                #print(time)
+                t = np.arange(0.05, time, 0.05)
+                
+                #print(len(mean_MSD[-1][1:int(lagmax_global*fps)]))
                 plt.loglog(t, mean_MSD[-1][1:int(time*fps)]/mean_MSD[-1][1], color = 'lavender', label = 'Individual MSD', linewidth = 1,zorder=0)
                 plt.xlabel('Lag time τ (s)',fontsize=22)
                 plt.ylabel('MSD (µm²)',fontsize=22)
@@ -512,7 +582,7 @@ for dev in list(datadic):
             plt.legend(by_label.values(), by_label.keys(), loc='upper left')
             #plt.legend(loc='upper left')
 plt.tight_layout() 
-plt.savefig('suppfig4_indMSDeMSD.png', dpi = 300)
+plt.savefig('suppfig_indMSDeMSD_normalized.png', dpi = 300)
 plt.close()
 
 
@@ -659,10 +729,16 @@ plt.close()
 # In[ ]:
 
 
-##### Use power law to fit MSDs [Figure 4b & Supplementary Figure 5]
+##### Use power law to fit MSDs [Figure 4b & Supplementary Figure 6]
 # Define the power law function
 def power_law(t, A, ν):
     return A * t**ν
+
+conditions = ['Unc', 'C = 6 µm; D = 0', 'C = 6 µm; D = 1', 'C= 6 µm; D = 2', 'C= 6 µm; D = 3',
+       'C = 2.6 µm; D = 0', 'C = 2.6 µm; D = 1', 'C = 2.6 µm; D = 2', 'C = 2.6 µm; D = 3', 
+        'C = 1.3 µm; D = 0', 'C = 1.3 µm; D = 1', 'C = 1.3 µm; D = 2', 'C = 1.3 µm; D = 3']
+
+mpl.rcParams['font.family'] = 'Arial'
 
 rows = 4
 cols = 4
@@ -677,6 +753,7 @@ cutofftimes = [3.5, 3.3, 2.9, 3.0, 2.4, 2.6, 2.3, 2.1, 1.8, 2.1, 1.5, 1.7, 1.3]
 M_msd = []
 M_std = []
 slopes_all = []
+errs_all = []
 
 for dev in list(datadic):
     for pil in list(datadic[dev]):
@@ -734,14 +811,20 @@ for dev in list(datadic):
             msd_mean_fit = msd_mean[:len(t_fit)]/msd_mean[0]
 
             popt, pcov = curve_fit(power_law, t_fit, msd_mean_fit, p0=[1, 2])
+            perr = np.sqrt(np.diag(pcov)) # standard errors of the fit parameters
+            ν_err = perr[1] # error of the ν exponent
+             
             A, ν = popt
             slopes_all.append(ν)
-            plt.loglog(t_fit,power_law(t_fit,*popt),color='xkcd:magenta',linestyle='dashed', label=f'Fit ν={ν:.2f}')
-            plt.legend(loc='upper left', fontsize=16)
+            errs_all.append(ν_err)
+            
+            plt.loglog(t_fit,power_law(t_fit,*popt),color='xkcd:magenta',linestyle='dashed', label=f'Fit ν={ν:.2f} ± {ν_err:.4f}')
+            plt.legend(loc='upper left', fontsize=12)
 
 plt.tight_layout()
-plt.savefig('fig4b&suppfig5_MSDfit.png',transparent=True,dpi=300)
+plt.savefig('fig4b&suppfig6_MSDfit.png',transparent=True,dpi=300)
 plt.close()
+
 
 
 #### Heatmap of nv across conditions at early times [Figure 4c]
