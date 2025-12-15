@@ -4,8 +4,9 @@
 # In[ ]:
 
 
-### The script produces sample trajectories shown in Fig 1, all trajectory overlays in Supplementary Fig. 1,
-### and Mean-squared Displacement analysis in Fig 4 and Supplementary Fig. 4 & 5. Last changed on March 29, 2025.
+##### The script produces sample trajectories shown in Fig. 1, all trajectory overlays in Supplementary Fig. 1,
+##### and mean-squared displacement analysis in Fig. 4, Fig. 5d, Fig. 5f as well as Supplementary Fig. 7, 8, & 9. 
+
 import os
 import glob,csv
 import pandas as pd
@@ -446,7 +447,7 @@ for j, time in enumerate(cutoff):
         
 print(cutoff)
 
-#Plot the individual MSDs and ensemble MSDs in subplots [Supplementary Figure 4]. 
+#Plot the individual MSDs and ensemble MSDs in subplots [Supplementary Figure 7 & 8]. 
 mpl.rcParams['font.family'] = 'Arial'
 rows = 4
 cols = 4
@@ -512,7 +513,7 @@ for dev in list(datadic):
             plt.legend(by_label.values(), by_label.keys(), loc='upper left')
             #plt.legend(loc='upper left')
 plt.tight_layout()
-plt.savefig('suppfig_indMSDeMSD_unnormalized.png', dpi = 300)
+plt.savefig('suppfig7_indMSDeMSD_unnormalized.png', dpi = 300)
 #plt.close()
 
 
@@ -582,14 +583,14 @@ for dev in list(datadic):
             plt.legend(by_label.values(), by_label.keys(), loc='upper left')
             #plt.legend(loc='upper left')
 plt.tight_layout() 
-plt.savefig('suppfig_indMSDeMSD_normalized.png', dpi = 300)
+plt.savefig('suppfig8_indMSDeMSD_normalized.png', dpi = 300)
 plt.close()
 
 
 # In[ ]:
 
 
-### Plot ensemble MSDs 6 um confinement [Figure 4a left]
+### Plot ensemble MSDs 6 um confinement [Figure 4a]
 mpl.rcParams['font.family'] = 'Arial'
 colors = ['xkcd:grey'] + sns.color_palette('Blues_r') 
 name = ['Unc', 'D = 0', 'D = 1',  'D = 2', 'D = 3']
@@ -635,7 +636,7 @@ plt.tight_layout()
 plt.savefig('fig4a_eMSD_6um.png', transparent=True, dpi = 300) 
 plt.close()
 
-### Plot ensemble MSDs 2.6 um confinement [Figure 4a center]
+### Plot ensemble MSDs 2.6 um confinement [Figure 4b]
 plt.rcParams['font.family'] = 'Arial'
 colors = ['xkcd:grey', 'xkcd:rust', 'xkcd:orange', 'xkcd:peach','xkcd:golden']
 
@@ -680,7 +681,7 @@ plt.tight_layout()
 plt.savefig('fig4a_eMSD_3um.png', transparent=True, dpi = 300) 
 plt.close()
 
-### Plot ensemble MSDs 1.3 um confinement [Figure 4a right]
+### Plot ensemble MSDs 1.3 um confinement [Figure 4c]
 plt.rcParams['font.family'] = 'Arial'
 colors = ['xkcd:grey', 'xkcd:navy green', 'xkcd:dark cyan', 'xkcd:jade','xkcd:slime green']
 
@@ -729,7 +730,7 @@ plt.close()
 # In[ ]:
 
 
-##### Use power law to fit MSDs [Figure 4b & Supplementary Figure 6]
+##### Use power law to fit MSDs [Figure 4d & Supplementary Figure 9]
 # Define the power law function
 def power_law(t, A, ν):
     return A * t**ν
